@@ -1,0 +1,84 @@
+<html>
+  <body ng-app="sdkuSolver">
+      <style type="text/css">
+        td{
+          width: 30px;
+          height: 30px;
+          font-size: 30px;
+          text-align: center;
+          border: 1px solid #ddd;
+        }
+        table{
+          margin: 10px;
+          display: inline-block;
+          border: 4px solid #333;
+          border-spacing: 0;
+          border-collapse: collapse;
+        }
+        .borderRight{
+          border-right: 2px solid #333;
+        }
+        .borderBottom{
+          border-bottom: 2px solid #333;
+        }
+        .number{
+          color: #333;
+        }
+        .startingnumber{
+          color: red;
+        }
+        .zero{
+          color: white;
+        }
+        h2{
+          color: #333;
+        }
+      </style>
+      <div ng-controller="sdkuCtrl">
+        <h2>{{status}}</h2>
+        <button ng-disabled="working" ng-click="solve('530070000600195000098000060800060003400803001700020006060000280000419005000080079')">SDKU1</button>
+        <button ng-disabled="working" ng-click="solve('400000805030000000000700000020000060000080400000010000000603070500200000104000000')">SDKU2</button>
+        <button ng-disabled="working" ng-click="solve('800000000003600000070090200050007000000045700000100030001000068008500010090000400')">SDKU3</button>
+        <div ng-bind-html="sdku">
+        </div>
+      </div>
+  </body>
+</html>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.5.8/angular.min.js"></script>
+<script type="text/javascript">
+var app = angular.module("sdkuSolver", [])
+.controller("sdkuCtrl", function($scope, $sce){
+  $scope.working = false;
+  $scope.status = "Select an example"
+  
+  var worker = new Worker('mainWorker.js');
+
+  worker.addEventListener('message', function(e) {
+    if(e.data.what == 'msg'){
+      $scope.$apply(function(){
+        $scope.status = e.data.msg;
+      });
+    }else if(e.data.what == 'result'){
+      var solution = e.data.solution;
+      $scope.working = false;
+      if(solution.solved){
+        $scope.$apply(function(){
+          $scope.status = "Solved in: "+solution.solvedIn+" seconds!";
+          $scope.sdku = $sce.trustAsHtml(solution.solutionHTML);
+        });
+      }else{
+        $scope.$apply(function(){
+          $scope.status = "Not a valid Sudoku!";
+        })
+      }
+    }
+  }, false);
+
+  $scope.solve = function(sdku){
+    $scope.working = true;
+    $scope.sdku = "";
+    worker.postMessage({'cmd': 'start', 'sdku': sdku});
+  };
+  
+})
+</script>
